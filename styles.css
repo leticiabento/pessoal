@@ -174,3 +174,6 @@ td input[type="number"] { text-align: right; }
 .login-card p { margin: 0; color: var(--muted); }
 .login-card input { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
 .login-error { color: var(--bad) !important; font-weight: 700; min-height: 1em; }
+
+/* No iPhone, campos com fonte menor que 16px fazem o Safari dar zoom ao tocar. */
+.login-card input, .tx-form input, .tx-form select { font-size: 16px; }
