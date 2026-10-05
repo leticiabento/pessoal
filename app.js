@@ -131,13 +131,19 @@ async function pull() {
 
 function showLogin(message = '') {
   ready = false;
+  document.body.classList.add('locked');
   document.getElementById('login').hidden = false;
   document.getElementById('login-error').textContent = message;
-  document.getElementById('login-password').focus();
+  // No celular, focar o campo por código não abre o teclado e pode deixar o campo
+  // "preso" no iPhone: só foca automaticamente em telas com mouse.
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    document.getElementById('login-password').focus();
+  }
 }
 
 async function afterLogin() {
   document.getElementById('login').hidden = true;
+  document.body.classList.remove('locked');
   if (dirty) {
     // Sessão expirou com alterações pendentes: envia antes de recarregar.
     ready = true;

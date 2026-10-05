@@ -40,6 +40,10 @@ jobs:
           ' > api/config.php
           php -l api/config.php
 
+      # Muda o endereço do CSS/JS a cada deploy para o navegador não usar versão antiga em cache.
+      - name: Versionar arquivos
+        run: sed -i "s/__VERSION__/${GITHUB_SHA::7}/g" index.html
+
       # A conta FTP deve apontar direto para /home2/leticiabento.com.br/public_html/pessoal,
       # por isso os arquivos vão para a raiz dela ("./").
       - name: Enviar arquivos por FTP
