@@ -26,11 +26,11 @@ Em Settings → Pages do repositório, publique a branch `main` (pasta raiz) par
 
 ## Deploy no cPanel
 
-Todo push na `main` envia os arquivos por FTP para `/home2/leticiabento.com.br/pessoal`
+Todo push na `main` envia os arquivos por FTP para `/home2/leticiabento.com.br/public_html/pessoal`
 (workflow em `.github/workflows/deploy.yml`). Também dá para rodar manualmente em Actions → "Deploy no cPanel" → Run workflow.
 
 Configuração (uma vez só):
 
-1. No cPanel, em **Contas de FTP**, crie uma conta cujo diretório seja `/home2/leticiabento.com.br/pessoal`.
+1. No cPanel, em **Contas de FTP**, crie uma conta cujo diretório seja `/home2/leticiabento.com.br/public_html/pessoal`.
 2. No GitHub, em **Settings → Secrets and variables → Actions**, crie os secrets
    `FTP_SERVER` (ex.: `ftp.leticiabento.com.br`), `FTP_USERNAME` (usuário completo, com `@leticiabento.com.br`) e `FTP_PASSWORD`.

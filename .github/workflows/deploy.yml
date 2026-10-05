@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # A conta FTP deve apontar direto para /home2/leticiabento.com.br/pessoal,
+      # A conta FTP deve apontar direto para /home2/leticiabento.com.br/public_html/pessoal,
       # por isso os arquivos vão para a raiz dela ("./").
       - name: Enviar arquivos por FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
