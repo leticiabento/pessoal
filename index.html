@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Controle Financeiro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <section class="card planejamento">
+      <h1>PLANEJAMENTO</h1>
+      <div class="month-nav">
+        <button class="icon-btn" data-action="prev-month" aria-label="Mês anterior">‹</button>
+        <span id="month-label"></span>
+        <button class="icon-btn" data-action="next-month" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="plan-actions">
+        <button class="btn ghost" data-action="copy-prev">Copiar estrutura do mês anterior</button>
+        <button class="btn ghost" data-action="export">Exportar backup</button>
+        <label class="btn ghost">Importar backup<input type="file" id="import-file" accept="application/json" hidden></label>
+      </div>
+    </section>
+    <section class="kpis" id="kpis"></section>
+  </header>
+
+  <main>
+    <div class="grid top-grid">
+      <section class="card pink distribuicao">
+        <h2>Distribuição do orçamento</h2>
+        <div id="distribuicao"></div>
+      </section>
+      <section class="card fluxo">
+        <h2>Fluxo de caixa</h2>
+        <div id="fluxo"></div>
+      </section>
+      <section class="card chart-card">
+        <h2>Detalhamento da renda</h2>
+        <div class="chart-wrap"><canvas id="chart-renda"></canvas></div>
+      </section>
+      <section class="card chart-card">
+        <h2>Caixa real</h2>
+        <div class="chart-wrap"><canvas id="chart-caixa"></canvas></div>
+      </section>
+      <section class="card chart-card wide">
+        <h2>Fluxo de caixa: real x orçamento</h2>
+        <div class="chart-wrap"><canvas id="chart-fluxo"></canvas></div>
+      </section>
+    </div>
+
+    <div class="grid sections-grid">
+      <section class="card cat-card" data-cat="renda" id="sec-renda"></section>
+      <section class="card cat-card" data-cat="essenciais" id="sec-essenciais"></section>
+      <section class="card cat-card" data-cat="naoEssenciais" id="sec-naoEssenciais"></section>
+      <section class="card chart-card">
+        <h2>Gastos não essenciais por item</h2>
+        <div class="chart-wrap"><canvas id="chart-naoessenciais"></canvas></div>
+      </section>
+      <section class="card cat-card" data-cat="economias" id="sec-economias"></section>
+      <section class="card cat-card" data-cat="dividas" id="sec-dividas"></section>
+      <section class="card cat-card faturas" id="sec-faturas"></section>
+    </div>
+
+    <section class="card transacoes">
+      <h2>Transações</h2>
+      <form id="form-transacao" class="tx-form">
+        <input type="date" name="data" required aria-label="Data">
+        <input type="text" name="descricao" placeholder="Descrição" aria-label="Descrição">
+        <select name="categoria" aria-label="Categoria"></select>
+        <select name="itemId" aria-label="Item"></select>
+        <input type="number" name="valor" step="0.01" min="0" placeholder="Valor" required aria-label="Valor">
+        <select name="forma" aria-label="Forma de pagamento">
+          <option value="vista">À vista</option>
+          <option value="cartao">Cartão</option>
+        </select>
+        <select name="cartaoId" aria-label="Cartão"></select>
+        <button class="btn" type="submit">Adicionar</button>
+      </form>
+      <div class="table-scroll"><table id="tabela-transacoes"></table></div>
+    </section>
+  </main>
+
+  <footer class="foot">Seus dados ficam salvos apenas neste navegador. Use "Exportar backup" com frequência.</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
