@@ -154,3 +154,23 @@ td input[type="number"] { text-align: right; }
   .sections-grid { grid-template-columns: 1fr; }
   .kpi { border-right: 0; }
 }
+
+.save-status { margin-top: 8px; font-size: 12px; min-height: 16px; color: var(--muted); }
+.save-status.ok { color: var(--ok); }
+.save-status.err { color: var(--bad); font-weight: 700; }
+
+.login {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--bg);
+}
+.login[hidden] { display: none; }
+.login-card { width: 100%; max-width: 340px; text-align: center; display: grid; gap: 12px; padding: 28px 24px; }
+.login-card h1 { margin: 0; }
+.login-card p { margin: 0; color: var(--muted); }
+.login-card input { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.login-error { color: var(--bad) !important; font-weight: 700; min-height: 1em; }

@@ -45,20 +45,160 @@ function seedMonth() {
   return m;
 }
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) { console.warn('Não foi possível ler os dados salvos', e); }
-  return { months: {} };
+// ---------- Servidor (API PHP + MySQL) ----------
+const API_URL = 'api/index.php';
+
+async function api(action, { method = 'GET', body } = {}) {
+  const headers = { 'X-Requested-With': 'fetch' };
+  if (body) headers['Content-Type'] = 'application/json';
+  const res = await fetch(`${API_URL}?action=${action}`, {
+    method, headers, credentials: 'same-origin', cache: 'no-store',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let json = {};
+  try { json = await res.json(); } catch (e) { /* resposta sem JSON */ }
+  if (!res.ok) {
+    const err = new Error(json.error || `Erro ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
+  return json;
+}
+
+const state = { months: {} };
+let version = 0;     // versão dos dados no servidor, evita sobrescrever alterações de outro aparelho
+let ready = false;   // sessão autenticada e dados carregados
+let dirty = false;   // há alterações locais ainda não enviadas
+let saving = false;
+let saveTimer = null;
+let retryTimer = null;
+
+function setStatus(text, kind = '') {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  el.textContent = text;
+  el.className = `save-status ${kind}`;
 }
 
 function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-  catch (e) { alert('Não foi possível salvar os dados neste navegador.'); }
+  if (!ready) return;
+  dirty = true;
+  setStatus('Alterações não salvas…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 500);
 }
 
-const state = load();
+async function flush() {
+  clearTimeout(saveTimer);
+  clearTimeout(retryTimer);
+  retryTimer = null;
+  if (saving || !dirty) return;
+  saving = true;
+  dirty = false;
+  setStatus('Salvando…');
+  try {
+    const res = await api('state', { method: 'PUT', body: { version, data: JSON.stringify(state) } });
+    version = res.version;
+    setStatus(dirty ? 'Alterações não salvas…' : 'Salvo ✓', dirty ? '' : 'ok');
+  } catch (e) {
+    dirty = true;
+    if (e.status === 409) {
+      dirty = false;
+      alert('Os dados foram alterados em outro aparelho. Vou carregar a versão mais recente: refaça a última alteração, por favor.');
+      await pull();
+    } else if (e.status === 401) {
+      setStatus('Sessão expirada', 'err');
+      showLogin();
+    } else {
+      setStatus('Erro ao salvar, tentando de novo…', 'err');
+      retryTimer = setTimeout(flush, 5000);
+    }
+  } finally {
+    saving = false;
+  }
+  if (dirty && ready && !retryTimer) flush();
+}
+
+async function pull() {
+  const res = await api('state');
+  version = res.version;
+  state.months = res.data ? (JSON.parse(res.data).months || {}) : {};
+  dirty = false;
+  setStatus(version ? 'Salvo ✓' : '', 'ok');
+  render();
+  return res;
+}
+
+function showLogin(message = '') {
+  ready = false;
+  document.getElementById('login').hidden = false;
+  document.getElementById('login-error').textContent = message;
+  document.getElementById('login-password').focus();
+}
+
+async function afterLogin() {
+  document.getElementById('login').hidden = true;
+  if (dirty) {
+    // Sessão expirou com alterações pendentes: envia antes de recarregar.
+    ready = true;
+    await flush();
+    return;
+  }
+  const res = await pull();
+  ready = true;
+  if (res.version === 0) migrateLocalData();
+}
+
+// Versões anteriores salvavam só no navegador: oferece enviar esses dados ao servidor.
+const LEGACY_KEY = 'pessoal:financas:v1';
+function migrateLocalData() {
+  let legacy = null;
+  try { legacy = JSON.parse(localStorage.getItem(LEGACY_KEY) || 'null'); } catch (e) { /* sem dados */ }
+  if (!legacy || !legacy.months || !Object.keys(legacy.months).length) return;
+  if (!confirm('Encontrei dados salvos neste navegador. Enviar para o servidor?')) return;
+  state.months = { ...state.months, ...legacy.months };
+  save();
+  render();
+}
+
+async function boot() {
+  try {
+    const res = await api('session');
+    if (res.authenticated) await afterLogin();
+    else showLogin();
+  } catch (e) {
+    showLogin(`Não foi possível conectar ao servidor (${e.message}).`);
+  }
+}
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('login-password');
+  const btn = e.target.querySelector('button');
+  btn.disabled = true;
+  document.getElementById('login-error').textContent = '';
+  try {
+    await api('login', { method: 'POST', body: { password: input.value } });
+    input.value = '';
+    await afterLogin();
+  } catch (err) {
+    document.getElementById('login-error').textContent = err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  // Ao voltar para a aba, busca o que foi alterado em outro aparelho.
+  if (document.visibilityState === 'visible' && ready && !dirty && !saving) {
+    pull().catch((e) => { if (e.status === 401) showLogin(); });
+  }
+});
+
+window.addEventListener('beforeunload', (e) => {
+  if (dirty || saving) { e.preventDefault(); e.returnValue = ''; }
+});
+
 const today = new Date();
 let currentKey = monthKey(today.getFullYear(), today.getMonth());
 
@@ -350,6 +490,7 @@ function renderCharts(m) {
 
 // ---------- Eventos ----------
 document.addEventListener('change', (e) => {
+  if (!ready) return;
   const el = e.target;
   const m = month();
   if (el.dataset.edit) {
@@ -376,7 +517,7 @@ document.addEventListener('change', (e) => {
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('button');
-  if (!el) return;
+  if (!el || !ready) return;
   const m = month();
   if (el.dataset.add) {
     const cat = el.dataset.add;
@@ -400,11 +541,14 @@ document.addEventListener('click', (e) => {
     copyFromPrevious();
   } else if (el.dataset.action === 'export') {
     exportBackup();
+  } else if (el.dataset.action === 'logout') {
+    logout();
   }
 });
 
 document.getElementById('form-transacao').addEventListener('submit', (e) => {
   e.preventDefault();
+  if (!ready) return;
   const f = e.target;
   const m = month();
   if (!f.itemId.value) { alert('Cadastre um item nesta categoria antes de lançar.'); return; }
@@ -442,6 +586,15 @@ function copyFromPrevious() {
   save(); render();
 }
 
+async function logout() {
+  if (dirty) await flush();
+  try { await api('logout', { method: 'POST' }); } catch (e) { /* segue para a tela de login */ }
+  state.months = {};
+  version = 0;
+  setStatus('');
+  showLogin();
+}
+
 function exportBackup() {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -467,4 +620,4 @@ function importBackup(file) {
   reader.readAsText(file);
 }
 
-render();
+boot();

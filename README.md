@@ -1,7 +1,7 @@
 # pessoal: controle financeiro
 
 Sisteminha pessoal para gerir gastos do mês, inspirado em uma planilha de planejamento financeiro.
-Roda direto no navegador: abra o `index.html`. Não precisa instalar nada.
+Front-end em HTML/CSS/JS puro e uma API pequena em PHP que guarda os dados no MySQL, com acesso por senha.
 
 ## O que tem
 
@@ -17,12 +17,18 @@ Roda direto no navegador: abra o `index.html`. Não precisa instalar nada.
 
 ## Onde ficam os dados
 
-No `localStorage` do navegador, só no seu aparelho. Exporte um backup de vez em quando:
-limpar os dados do navegador apaga tudo.
+No MySQL do cPanel, numa tabela `app_state` (um documento JSON com todos os meses), criada
+automaticamente no primeiro acesso. Assim os dados sincronizam entre computador e celular.
 
-## Publicar (opcional)
+- **Login:** senha única, definida no secret `APP_PASSWORD`. A sessão dura 30 dias por aparelho.
+  Após 5 senhas erradas, o acesso fica bloqueado por 15 minutos para aquele IP.
+- **Conflitos:** se o mesmo dado for alterado em dois aparelhos ao mesmo tempo, o segundo recebe um aviso
+  e recarrega a versão mais recente em vez de sobrescrever.
+- **Dados antigos:** se o navegador tiver dados da versão anterior (salvos só no navegador),
+  o app oferece enviá-los ao servidor no primeiro acesso.
+- O "Exportar backup" continua disponível.
 
-Em Settings → Pages do repositório, publique a branch `main` (pasta raiz) para acessar pelo celular.
+API (`api/index.php`): `?action=session` (GET), `login` (POST), `logout` (POST), `state` (GET/PUT).
 
 ## Deploy no cPanel
 
@@ -32,5 +38,11 @@ Todo push na `main` envia os arquivos por FTP para `/home2/leticiabento.com.br/p
 Configuração (uma vez só):
 
 1. No cPanel, em **Contas de FTP**, crie uma conta cujo diretório seja `/home2/leticiabento.com.br/public_html/pessoal`.
-2. No GitHub, em **Settings → Secrets and variables → Actions**, crie os secrets
-   `FTP_SERVER` (ex.: `ftp.leticiabento.com.br`), `FTP_USERNAME` (usuário completo, com `@leticiabento.com.br`) e `FTP_PASSWORD`.
+2. No cPanel, em **Bancos de dados MySQL**, crie um banco e um usuário, e adicione o usuário ao banco com **todos os privilégios**.
+3. No GitHub, em **Settings → Secrets and variables → Actions**, crie os secrets:
+   - `FTP_SERVER` (ex.: `ftp.leticiabento.com.br`), `FTP_USERNAME` (usuário completo, com `@leticiabento.com.br`) e `FTP_PASSWORD`
+   - `DB_NAME` e `DB_USER` (com o prefixo do cPanel, ex.: `usuario_financas`), `DB_PASS`
+   - `DB_HOST` (opcional, padrão `localhost`)
+   - `APP_PASSWORD`: a senha que você vai digitar para entrar no app
+
+O deploy gera `api/config.php` a partir desses secrets; ele nunca vai para o repositório.

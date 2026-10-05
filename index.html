@@ -10,6 +10,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
+  <div id="login" class="login" hidden>
+    <form id="login-form" class="card login-card">
+      <h1>PLANEJAMENTO</h1>
+      <p>Digite sua senha para acessar.</p>
+      <input type="password" id="login-password" autocomplete="current-password" placeholder="Senha" required aria-label="Senha">
+      <button class="btn" type="submit">Entrar</button>
+      <p id="login-error" class="login-error" role="alert"></p>
+    </form>
+  </div>
+
   <header class="topbar">
     <section class="card planejamento">
       <h1>PLANEJAMENTO</h1>
@@ -22,7 +32,9 @@
         <button class="btn ghost" data-action="copy-prev">Copiar estrutura do mês anterior</button>
         <button class="btn ghost" data-action="export">Exportar backup</button>
         <label class="btn ghost">Importar backup<input type="file" id="import-file" accept="application/json" hidden></label>
+        <button class="btn ghost" data-action="logout">Sair</button>
       </div>
+      <div id="save-status" class="save-status" aria-live="polite"></div>
     </section>
     <section class="kpis" id="kpis"></section>
   </header>
@@ -83,7 +95,7 @@
     </section>
   </main>
 
-  <footer class="foot">Seus dados ficam salvos apenas neste navegador. Use "Exportar backup" com frequência.</footer>
+  <footer class="foot">Seus dados ficam salvos no servidor e sincronizam entre seus aparelhos.</footer>
 
   <script src="app.js"></script>
 </body>

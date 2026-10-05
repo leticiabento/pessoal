@@ -15,6 +15,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Gera api/config.php com os dados do banco e o hash da senha de acesso.
+      # Nada disso fica no repositório: vem dos secrets do GitHub.
+      - name: Gerar configuração da API
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        run: |
+          for v in DB_NAME DB_USER DB_PASS APP_PASSWORD; do
+            if [ -z "${!v}" ]; then echo "::error::Secret $v não configurado"; exit 1; fi
+          done
+          php -r '
+            $c = [
+              "db_host" => getenv("DB_HOST") ?: "localhost",
+              "db_name" => getenv("DB_NAME"),
+              "db_user" => getenv("DB_USER"),
+              "db_pass" => getenv("DB_PASS"),
+              "password_hash" => password_hash(getenv("APP_PASSWORD"), PASSWORD_DEFAULT),
+            ];
+            echo "<?php\nreturn " . var_export($c, true) . ";\n";
+          ' > api/config.php
+          php -l api/config.php
+
       # A conta FTP deve apontar direto para /home2/leticiabento.com.br/public_html/pessoal,
       # por isso os arquivos vão para a raiz dela ("./").
       - name: Enviar arquivos por FTP
@@ -31,3 +56,4 @@ jobs:
             **/.git*/**
             .github/**
             README.md
+            api/config.example.php
